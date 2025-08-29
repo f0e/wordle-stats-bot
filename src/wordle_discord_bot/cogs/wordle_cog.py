@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -58,8 +60,14 @@ class WordleCog(commands.Cog):
     @app_commands.command(
         name="wordle_stats", description="Show Wordle statistics for a user"
     )
+    @app_commands.describe(
+        days="Number of days back to include in leaderboard (optional)"
+    )
     async def wordle_stats(
-        self, interaction: discord.Interaction, user: discord.Member
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member | None = None,
+        days: int | None = None,
     ):
         await interaction.response.defer()
 
@@ -73,15 +81,21 @@ class WordleCog(commands.Cog):
 
         db: Session = next(get_db())
         try:
+            # Determine cutoff date if days filter is provided
+            cutoff_date = None
+            if days is not None:
+                cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+
             # Get user's plays
-            plays = (
-                db.query(WordlePlay)
-                .filter(
-                    WordlePlay.guild_id == interaction.guild.id,
-                    WordlePlay.discord_user_id == target_user.id,
-                )
-                .all()
+            query = db.query(WordlePlay).filter(
+                WordlePlay.guild_id == interaction.guild.id,
+                WordlePlay.discord_user_id == target_user.id,
             )
+
+            if cutoff_date is not None:
+                query = query.filter(WordlePlay.played_at >= cutoff_date)
+
+            plays = query.all()
 
             if not plays:
                 await interaction.followup.send(
@@ -159,7 +173,12 @@ class WordleCog(commands.Cog):
         name="wordle_leaderboard",
         description="Show the Wordle leaderboard for this server",
     )
-    async def wordle_leaderboard(self, interaction: discord.Interaction):
+    @app_commands.describe(
+        days="Number of days back to include in leaderboard (optional)"
+    )
+    async def wordle_leaderboard(
+        self, interaction: discord.Interaction, days: int | None = None
+    ):
         await interaction.response.defer()
 
         if not interaction.guild:
@@ -170,6 +189,11 @@ class WordleCog(commands.Cog):
 
         db: Session = next(get_db())
         try:
+            # Determine cutoff date if days filter is provided
+            cutoff_date = None
+            if days is not None:
+                cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+
             # Get all users with plays in this guild
             users_with_stats = (
                 db.query(GuildUserStats.discord_user_id, GuildUserStats)
@@ -180,7 +204,12 @@ class WordleCog(commands.Cog):
             leaderboard_data = []
 
             for user_id, user_stats in users_with_stats:
-                plays = [p for p in user_stats.plays]
+                # Filter plays by cutoff date if applicable
+                plays = [
+                    p
+                    for p in user_stats.plays
+                    if not cutoff_date or p.played_at >= cutoff_date
+                ]
                 if not plays:
                     continue
 
@@ -204,7 +233,6 @@ class WordleCog(commands.Cog):
                         discord_user.display_name if discord_user else f"User {user_id}"
                     )
                 except:
-                    # idk they left or something
                     display_name = f"User {user_id}"
 
                 leaderboard_data.append(
@@ -228,24 +256,22 @@ class WordleCog(commands.Cog):
                 win_rate = user["success_rate"]
                 wins = user["successful_plays"]
 
-                # Penalize low sample size by a smoothing factor
                 smoothing = 5
                 effective_avg = (avg * wins + 6 * smoothing) / (wins + smoothing)
-
-                # Slight adjustment for success rate (higher is better)
                 score = effective_avg - (win_rate / 100)
 
                 return score
 
             leaderboard_data.sort(key=leaderboard_score)
 
-            # Create embed
             embed = discord.Embed(
-                title="🏆 Wordle Leaderboard", color=discord.Color.gold()
+                title="🏆 Wordle Leaderboard"
+                + (f" (last {days} days)" if days else ""),
+                color=discord.Color.gold(),
             )
 
             leaderboard_text = ""
-            for i, data in enumerate(leaderboard_data[:10], 1):  # Top 10
+            for i, data in enumerate(leaderboard_data[:10], 1):
                 emoji = ["🥇", "🥈", "🥉"][i - 1] if i <= 3 else f"{i}."
                 leaderboard_text += f"{emoji} **{data['name']}**\n"
                 leaderboard_text += f"   Win Rate: {data['success_rate']:.1f}% | Avg: {data['avg_guesses']:.1f} | Games: {data['total_plays']}\n\n"
@@ -269,7 +295,7 @@ class WordleCog(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         await interaction.followup.send("🔄 Starting manual rescan...")
-        await scan_historical_messages(self.bot)
+        await scan_historical_messages(self.bot, True)
         await interaction.followup.send("✅ Rescan completed!")
 
 

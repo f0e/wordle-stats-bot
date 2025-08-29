@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKeyConstraint,
     Index,
     Integer,
+    String,
     UniqueConstraint,
     create_engine,
 )
@@ -52,6 +53,7 @@ class WordlePlay(Base):
     discord_user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     stats_discord_message_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    discord_user_name_at_time: Mapped[str] = mapped_column(String, nullable=True)
 
     guesses: Mapped[int | None] = mapped_column(
         Integer, nullable=True

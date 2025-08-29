@@ -134,12 +134,14 @@ class WordleCog(commands.Cog):
                 inline=True,
             )
 
-            MAX_BAR_LENGTH = 20
-
             if guess_distribution:
+                MAX_BAR_LENGTH = 20
+
+                max_count = max(guess_distribution.values())
+
                 dist_text = "\n".join(
                     [
-                        f"{i}/6: {'█' * (int(count / MAX_BAR_LENGTH))} ({count})"
+                        f"{i}/6: {'█' * (int((count / max_count) * MAX_BAR_LENGTH))} ({count})"
                         for i, count in guess_distribution.items()
                         if count > 0
                     ]

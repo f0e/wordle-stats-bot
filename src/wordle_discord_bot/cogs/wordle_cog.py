@@ -39,18 +39,13 @@ class WordleCog(commands.Cog):
             print(f"📨 Message from Wordle user: {message.content[:100]}...")
 
             # Parse the message
-            parsed_results = parse_wordle_message(message.content)
+            parsed_results = await parse_wordle_message(message.guild, message.content)
 
             if parsed_results:
-                print(
-                    f"🎯 Found Wordle results! Streak: {parsed_results['streak_days']} days"
-                )
-                print(f"👥 Results for {len(parsed_results['results'])} users")
-
                 # Save to database
                 try:
                     await save_results_to_db(
-                        message.guild.id, message.id, parsed_results
+                        message.guild.id, message.id, message.created_at, parsed_results
                     )
                 except Exception as e:
                     print(f"❌ Failed to save Wordle results: {e}")
@@ -139,12 +134,12 @@ class WordleCog(commands.Cog):
                 inline=True,
             )
 
-            max_bar_length = 20
+            MAX_BAR_LENGTH = 20
 
             if guess_distribution:
                 dist_text = "\n".join(
                     [
-                        f"{i}/6: {'█' * (count / max_bar_length)} ({count})"
+                        f"{i}/6: {'█' * (count / MAX_BAR_LENGTH)} ({count})"
                         for i, count in guess_distribution.items()
                         if count > 0
                     ]

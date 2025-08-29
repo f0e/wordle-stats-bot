@@ -1,0 +1,23 @@
+[tools]
+"pipx:pre-commit" = "latest"
+python = "latest"
+uv = "latest"
+watchexec = "latest"
+
+[tasks.setup]
+run = """
+pre-commit install
+uv sync
+"""
+
+[tasks.dev]
+run = "watchexec --exts py -- uv run bot"
+
+[tasks.check]
+run = "ruff check --fix"
+
+[tasks.format]
+run = "ruff format"
+
+[tasks.start]
+run = "uv run bot"

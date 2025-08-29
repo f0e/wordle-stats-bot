@@ -1,0 +1,10 @@
+{
+  "configurations": [
+    {
+      "name": "debug bot",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "src.wordle_discord_bot.main"
+    }
+  ]
+}

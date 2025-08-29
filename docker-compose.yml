@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: wordle
+      POSTGRES_USER: wordle
+      POSTGRES_PASSWORD: wordle
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  bot:
+    image: ghcr.io/f0e/wordle-bot/wordle-bot:latest # or :beta
+    depends_on:
+      - db
+    environment:
+      - DISCORD_TOKEN=xxxxxxxxxxxxxxxxxxxx
+      - DATABASE_URL=xxxxxxxxxxxxxxxx
+    restart: unless-stopped
+
+volumes:
+  pgdata:

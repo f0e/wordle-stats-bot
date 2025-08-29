@@ -1,3 +1,4 @@
+import math
 from datetime import datetime, timedelta, timezone
 
 import discord
@@ -141,7 +142,7 @@ class WordleCog(commands.Cog):
 
                 dist_text = "\n".join(
                     [
-                        f"{i}/6: {'█' * (int((count / max_count) * MAX_BAR_LENGTH))} ({count})"
+                        f"{i}/6: {'█' * max(1, round((count / max_count) * MAX_BAR_LENGTH))} ({count})"
                         for i, count in guess_distribution.items()
                         if count > 0
                     ]

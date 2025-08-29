@@ -139,7 +139,7 @@ class WordleCog(commands.Cog):
             if guess_distribution:
                 dist_text = "\n".join(
                     [
-                        f"{i}/6: {'█' * (count / MAX_BAR_LENGTH)} ({count})"
+                        f"{i}/6: {'█' * (int(count / MAX_BAR_LENGTH))} ({count})"
                         for i, count in guess_distribution.items()
                         if count > 0
                     ]

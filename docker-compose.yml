@@ -10,7 +10,7 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   bot:
-    image: ghcr.io/f0e/wordle-bot/wordle-bot:latest # or :beta
+    image: ghcr.io/f0e/wordle-stats-bot/wordle-bot:latest # or :beta
     depends_on:
       - db
     environment:

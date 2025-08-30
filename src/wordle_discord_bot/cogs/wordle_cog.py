@@ -136,7 +136,7 @@ class WordleCog(commands.Cog):
             )
 
             if guess_distribution:
-                MAX_BAR_LENGTH = 20
+                MAX_BAR_LENGTH = 10
 
                 max_count = max(guess_distribution.values())
 

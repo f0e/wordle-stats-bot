@@ -10,6 +10,7 @@ from wordle_discord_bot.utils.parsing import (
     parse_wordle_message,
     save_results_to_db,
     scan_historical_messages,
+    scan_historical_messages_all_guilds,
 )
 
 from ..database import GuildUserStats, WordlePlay, get_db
@@ -26,7 +27,7 @@ class WordleCog(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         if not self._historical_scan_done:
-            await scan_historical_messages(self.bot)
+            await scan_historical_messages_all_guilds(self.bot)
             self._historical_scan_done = True
 
     @commands.Cog.listener()
@@ -291,12 +292,22 @@ class WordleCog(commands.Cog):
         name="rescan_wordle",
         description="Manually trigger a rescan of historical Wordle messages (Admin only)",
     )
+    @app_commands.describe(guild_only="Only in this guild?")
     @app_commands.default_permissions(administrator=True)
-    async def rescan_wordle(self, interaction: discord.Interaction):
+    async def rescan_wordle(self, interaction: discord.Interaction, guild_only: bool):
         await interaction.response.defer(ephemeral=True)
 
         await interaction.followup.send("🔄 Starting manual rescan...")
-        await scan_historical_messages(self.bot, True)
+        if guild_only:
+            if not interaction.guild:
+                await interaction.followup.send(
+                    "Can't rescan, not in a guild!", ephemeral=True
+                )
+                return
+
+            await scan_historical_messages(self.bot, interaction.guild, True)
+        else:
+            await scan_historical_messages_all_guilds(self.bot, True)
         await interaction.followup.send("✅ Rescan completed!")
 
 

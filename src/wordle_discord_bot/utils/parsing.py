@@ -188,39 +188,50 @@ async def save_results_to_db(
         db.close()
 
 
-async def scan_historical_messages(bot: commands.Bot, force: bool = False):
-    print("🔍 Starting historical scan for Wordle messages...")
+async def scan_historical_messages(
+    bot: commands.Bot, guild: discord.Guild, force: bool = False
+):
+    print(f"🔍 Starting historical scan for Wordle messages in guild {guild.name}...")
 
     if not force:
         db = SessionLocal()
         try:
-            existing_plays = db.query(WordlePlay).limit(1).first()
+            existing_plays = (
+                db.query(WordlePlay)
+                .filter(WordlePlay.guild_id == guild.id)
+                .limit(1)
+                .first()
+            )
             if existing_plays:
-                print("📊 Database already contains plays, skipping historical scan")
+                print(
+                    "📊 Database already contains plays for this guild, skipping historical scan"
+                )
                 return
         finally:
             db.close()
 
-    processed_count = 0
+    for channel in guild.text_channels:
+        try:
+            await scan_channel(channel, guild)
+        except discord.Forbidden:
+            print(f"❌ No permission to read channel {channel.name}")
+        except Exception as e:
+            print(f"❌ Error scanning channel {channel.name}: {e}")
+
+
+async def scan_historical_messages_all_guilds(bot: commands.Bot, force: bool = False):
+    print("🔍 Starting historical scan for Wordle messages in all guilds...")
 
     for guild in bot.guilds:
         print(f"🔎 Scanning guild: {guild.name}")
-        for channel in guild.text_channels:
-            try:
-                processed_count = await scan_channel(channel, guild, processed_count)
-            except discord.Forbidden:
-                print(f"❌ No permission to read channel {channel.name}")
-            except Exception as e:
-                print(f"❌ Error scanning channel {channel.name}: {e}")
 
-    print(f"✅ Historical scan complete! Processed {processed_count} messages")
+        await scan_historical_messages(bot, guild, force)
 
 
 async def scan_channel(
     channel: discord.TextChannel,
     guild: discord.Guild,
-    processed_count: int,
-) -> int:
+):
     print(f"🔍 Scanning channel: {channel.name}")
 
     last_wordle_date: datetime | None = None
@@ -232,15 +243,11 @@ async def scan_channel(
         if message.author.id == WORDLE_USER_ID:
             parsed = await parse_wordle_message(guild, message.content)
             if parsed:
-                processed_count += 1
                 last_wordle_date = message.created_at
 
                 try:
                     await save_results_to_db(
                         guild.id, message.id, message.created_at, parsed
-                    )
-                    print(
-                        f"📈 Processed message {processed_count} from {message.created_at.strftime('%Y-%m-%d')}"
                     )
                 except Exception as e:
                     print(f"❌ Error processing message: {e}")
@@ -264,5 +271,3 @@ async def scan_channel(
                     f"⏹️ Stopping scan for {channel.name} - 7 days scanned and no wordles"
                 )
                 break
-
-    return processed_count

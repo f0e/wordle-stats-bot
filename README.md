@@ -22,7 +22,8 @@ create `.env` and fill out
 ```
 DISCORD_TOKEN=[discord bot token]
 DATABASE_URL=postgresql://...
-optional: TEST_GUILD_ID=[guild id, allows for realtime slash command updates. use if they're not updating]
+optional: BOT_OWNER_ID=[owner id, enables permissions for /sync to sync slash commands manually]
+optional: BOT_HOME_GUILD_ID=[home server id, always syncs /sync command]
 ```
 
 and run `mise run setup`

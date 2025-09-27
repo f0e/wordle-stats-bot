@@ -153,7 +153,9 @@ class WordleCog(commands.Cog):
                 )
 
             embed.add_field(
-                name="Failed Games", value=str(len(failed_plays)), inline=True
+                name="Failed/Unfinished Games",
+                value=str(len(failed_plays)),
+                inline=True,
             )
 
             # Add user avatar
@@ -298,15 +300,6 @@ class WordleCog(commands.Cog):
         await interaction.followup.send("✅ Rescan completed!")
 
 
-async def setup(bot: commands.Bot, TEST_GUILD_ID=None):
+async def setup(bot: commands.Bot):
     cog = WordleCog(bot)
     await bot.add_cog(cog)
-
-    if TEST_GUILD_ID:
-        guild = discord.Object(id=TEST_GUILD_ID)
-        bot.tree.add_command(cog.wordle_stats, guild=guild)
-        bot.tree.add_command(cog.wordle_leaderboard, guild=guild)
-        bot.tree.add_command(cog.rescan_wordle, guild=guild)
-        await bot.tree.sync(guild=guild)
-
-    print("✅ Wordle cog setup complete")

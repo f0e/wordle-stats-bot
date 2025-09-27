@@ -4,10 +4,10 @@ from dotenv import load_dotenv
 from rich import print
 
 from . import config
-from .cogs import wordle_cog
+from .cogs import admin_cog, wordle_cog
 from .database import create_tables
 
-description = """Wordle Results Tracker Bot"""
+description = """Wordle stats bot"""
 
 load_dotenv()
 
@@ -28,9 +28,10 @@ class WordleBot(commands.Bot):
         )
 
     async def setup_hook(self):
-        await wordle_cog.setup(self, config.TEST_GUILD_ID)
+        await admin_cog.setup(self)
+        await wordle_cog.setup(self)
 
-        print("All cogs initialised")
+        print("Cogs initialised")
 
     async def close(self):
         await super().close()
